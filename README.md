@@ -6,7 +6,7 @@ LendLoop is a neighbourhood tool-lending board. Neighbours list tools they're ha
 
 - **Live demo:** https://lendloop-henna.vercel.app (Clerk development instance: sign up with any email)
 - **Stack:** Next.js 16 (App Router), Clerk, Convex, n8n (self-hosted), TypeScript
-- **Look and feel:** the *Virtual Cafe* design system (Woodhouse theme): its colour tokens, Pixelify Sans, Silkscreen and Work Sans type, and its Avatar Engine, which gives every neighbour a stable pixel avatar seeded from an opaque id
+- **Look and feel:** the *Virtual Cafe* design system (Woodhouse theme): its colour tokens and Work Sans UI type (paired with Fraunces for headings), and its Avatar Engine, which gives every neighbour a stable pixel avatar seeded from an opaque id
 
 ---
 

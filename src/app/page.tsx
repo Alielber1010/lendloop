@@ -30,9 +30,9 @@ export default function Landing() {
       </header>
 
       <section className="hero">
-        <span className="pixel">Your street&apos;s shared shed</span>
+        <span className="pixel">Your street’s shared shed</span>
         <h1 className="display">
-          Borrow what you need. <em>Lend what you don&apos;t.</em>
+          Borrow what you need. <em>Lend what you don’t.</em>
         </h1>
         <p>
           LendLoop is a lending board for neighbours. List the drill that sits in your cupboard, borrow a ladder for a

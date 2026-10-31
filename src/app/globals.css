@@ -1,6 +1,7 @@
 /*
  * LendLoop uses the "Virtual Cafe radio themes" design system (Woodhouse theme):
- * owner-page tokens for surfaces, HUD tokens for status, Pixelify Sans / Silkscreen / Work Sans.
+ * owner-page tokens for surfaces and HUD tokens for status. Type: Fraunces for headings and
+ * Work Sans (the system's UI face) for everything else; the pixel faces are kept for the TV only.
  * Token names match the system's tokens.json so they can be re-synced.
  */
 :root {
@@ -43,13 +44,14 @@ a { color: inherit; }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--hud-accent); outline-offset: 2px; }
 
-.display { font-family: var(--font-display), monospace; font-weight: 700; letter-spacing: 0.01em; }
+.display { font-family: var(--font-display), Georgia, serif; font-weight: 600; letter-spacing: -0.015em; }
 .pixel {
-  font-family: var(--font-pixel), monospace;
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-weight: 600;
   text-transform: uppercase;
   font-size: 11px;
   line-height: 14px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: var(--tv-muted);
 }
 .muted { color: var(--tv-muted); }
@@ -64,9 +66,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .brand-mark {
   width: 34px; height: 34px; border-radius: var(--radius-tag);
   background: var(--hud-accent); color: var(--hud-accent-ink);
-  display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 18px;
+  display: grid; place-items: center; font-family: var(--font-display); font-weight: 600; font-size: 20px;
 }
-.brand-name { font-family: var(--font-display); font-weight: 700; font-size: 24px; }
+.brand-name { font-family: var(--font-display); font-weight: 600; font-size: 24px; letter-spacing: -0.02em; }
 .topbar-right { display: flex; align-items: center; gap: 12px; }
 
 .tabs { display: flex; gap: 6px; padding: 14px 0; overflow-x: auto; scrollbar-width: none; }
@@ -131,7 +133,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .badge {
   display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px;
   border-radius: var(--radius-tag); background: var(--tag-bg); border: 1px solid var(--tv-line);
-  font-family: var(--font-pixel); font-size: 10px; line-height: 14px; letter-spacing: 0.08em; text-transform: uppercase;
+  font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
 }
 .badge::before { content: ""; width: 6px; height: 6px; background: currentColor; }
 .badge-live { color: var(--hud-live); }
@@ -164,7 +166,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* ---------- public landing */
 .hero { padding: 64px 0 40px; display: grid; gap: 18px; }
-.hero h1 { margin: 0; font-size: clamp(36px, 7vw, 64px); line-height: 1.05; }
+.hero h1 { margin: 0; font-size: clamp(38px, 7vw, 68px); line-height: 1.04; letter-spacing: -0.03em; }
 .hero h1 em { font-style: normal; color: var(--hud-accent); }
 .hero p { margin: 0; max-width: 560px; font-size: 17px; line-height: 26px; color: var(--tv-muted); }
 .shelf { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
@@ -172,7 +174,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .footer { padding: 40px 0; color: var(--tv-muted); font-size: 13px; }
 
 table.data { width: 100%; border-collapse: collapse; font-size: 14px; }
-table.data th { text-align: left; font-family: var(--font-pixel); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tv-muted); font-weight: 400; padding: 8px; }
+table.data th { text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tv-muted); font-weight: 600; padding: 8px; }
 table.data td { padding: 10px 8px; border-top: 1px solid var(--tv-line); vertical-align: top; }
 .table-scroll { overflow-x: auto; }
 

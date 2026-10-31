@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { Pixelify_Sans, Silkscreen, Work_Sans } from "next/font/google";
+import { Fraunces, Work_Sans } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 import "./globals.css";
 
-const display = Pixelify_Sans({ subsets: ["latin"], weight: ["500", "700"], variable: "--font-display" });
-const pixel = Silkscreen({ subsets: ["latin"], weight: "400", variable: "--font-pixel" });
+const display = Fraunces({ subsets: ["latin"], weight: ["500", "600"], variable: "--font-display" });
 const ui = Work_Sans({ subsets: ["latin"], weight: ["400", "600"], variable: "--font-ui" });
 
 export const metadata: Metadata = {
@@ -15,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${display.variable} ${pixel.variable} ${ui.variable}`}>
+    <html lang="en" className={`${display.variable} ${ui.variable}`}>
       <body>
         <ClerkProvider
           appearance={{
