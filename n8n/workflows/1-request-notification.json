@@ -1,0 +1,494 @@
+{
+  "updatedAt": "2026-10-31T05:34:19.791Z",
+  "createdAt": "2026-10-31T05:31:58.449Z",
+  "id": "IFGxLlFJhyr46c2u",
+  "name": "LendLoop – Request notification",
+  "description": "Receives signed loan events from LendLoop's Convex backend, verifies the signature and body hash, composes a minimal message, logs a mock delivery and writes it back to Convex.",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "95ccbcda-b9b3-4878-9262-8a6340f87614",
+      "name": "Loan event from Convex",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lendloop/loan-event",
+        "authentication": "jwtAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "86f41a6c-d4ad-4e5b-bf27-045c3b388553",
+      "credentials": {
+        "jwtAuth": {
+          "id": "LendLoopVerifyIn1",
+          "name": "LendLoop – verify Convex → n8n"
+        }
+      }
+    },
+    {
+      "id": "4a7209e0-e5b2-43f2-85a9-bafe5e238389",
+      "name": "Read signed claims",
+      "type": "n8n-nodes-base.jwt",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "operation": "verify",
+        "token": "={{ ($json.headers.authorization ?? \"\").replace(/^Bearer\\s+/i, \"\") }}",
+        "options": {
+          "algorithm": "HS256",
+          "clockTolerance": 30
+        }
+      },
+      "credentials": {
+        "jwtAuth": {
+          "id": "LendLoopVerifyIn1",
+          "name": "LendLoop – verify Convex → n8n"
+        }
+      }
+    },
+    {
+      "id": "eb41f1bd-5d48-4d08-a200-49e74fdcbd1a",
+      "name": "Hash received body",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "action": "hash",
+        "type": "SHA256",
+        "value": "={{ JSON.stringify($('Loan event from Convex').item.json.body) }}",
+        "dataPropertyName": "receivedSha256",
+        "encoding": "hex"
+      }
+    },
+    {
+      "id": "49a33424-0773-4d09-86d4-96d5eabde73a",
+      "name": "Body matches signature?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.receivedSha256 }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "={{ $json.payload.bodySha256 }}"
+            },
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.payload.iss }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "lendloop-convex"
+            },
+            {
+              "id": "c3",
+              "leftValue": "={{ $json.payload.aud }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "lendloop-n8n"
+            },
+            {
+              "id": "c4",
+              "leftValue": "={{ $json.payload.jti }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "={{ $('Loan event from Convex').item.json.body.eventId }}"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "798d04b6-123a-4656-ae67-4a0d07263b14",
+      "name": "Compose message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        -100
+      ],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "event",
+              "name": "eventId",
+              "value": "={{ $('Loan event from Convex').item.json.body.eventId }}",
+              "type": "string"
+            },
+            {
+              "id": "loan",
+              "name": "loanId",
+              "value": "={{ $('Loan event from Convex').item.json.body.loan.id }}",
+              "type": "string"
+            },
+            {
+              "id": "kind",
+              "name": "kind",
+              "value": "={{ $('Loan event from Convex').item.json.body.type }}",
+              "type": "string"
+            },
+            {
+              "id": "ref",
+              "name": "recipientRef",
+              "value": "={{ $('Loan event from Convex').item.json.body.recipient.ref }}",
+              "type": "string"
+            },
+            {
+              "id": "channel",
+              "name": "channel",
+              "value": "in-app",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "={{ (() => { const b = $('Loan event from Convex').item.json.body; const d = (s) => DateTime.fromISO(s).toFormat('LLL d'); const range = d(b.loan.startDate) + '–' + d(b.loan.endDate); return ({ 'loan.requested': b.counterpart.name + ' asked to borrow your ' + b.tool.name + ' (' + range + ').', 'loan.approved': 'Good news: ' + b.counterpart.name + ' approved your request for the ' + b.tool.name + ' (' + range + ').', 'loan.declined': 'Your request for the ' + b.tool.name + ' (' + range + ') was declined.', 'loan.cancelled': b.counterpart.name + ' cancelled their request for your ' + b.tool.name + '.', 'loan.returned': 'Thanks! ' + b.counterpart.name + ' confirmed the ' + b.tool.name + ' is back.' })[b.type] ?? ('Update on the ' + b.tool.name + '.'); })() }}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "00703d60-1480-4ce4-a2a8-e45f2bd069b2",
+      "name": "Deliver (mock: log to outbox)",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        -100
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "dazk7yo0Iy0xSkBz",
+          "cachedResultName": "lendloop_outbox"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "dedupeKey",
+              "condition": "eq",
+              "keyValue": "=notify:{{ $json.eventId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "dedupeKey": "=notify:{{ $json.eventId }}",
+            "kind": "={{ $json.kind }}",
+            "recipientRef": "={{ $json.recipientRef }}",
+            "channel": "={{ $json.channel }}",
+            "message": "={{ $json.message }}",
+            "loanId": "={{ $json.loanId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "dedupeKey",
+              "displayName": "dedupeKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "kind",
+              "displayName": "kind",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recipientRef",
+              "displayName": "recipientRef",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "loanId",
+              "displayName": "loanId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "176371a6-eb74-4e83-8ab7-e7345117b1d2",
+      "name": "Write delivery back to Convex",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1320,
+        -100
+      ],
+      "parameters": {
+        "mode": "each",
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "QgumfE6iUqKqq1mD",
+          "cachedResultName": "LendLoop – Signed call to Convex"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "path": "notification",
+            "payload": "={{ { eventId: $('Compose message').item.json.eventId, channel: $('Compose message').item.json.channel, message: $('Compose message').item.json.message } }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "path",
+              "displayName": "path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "payload",
+              "displayName": "payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "81d1ff44-1fd3-478b-9e60-fc56daa035aa",
+      "name": "Respond 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1540,
+        -100
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, eventId: $('Compose message').item.json.eventId } }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "8eb8831b-77d7-41f1-88f4-311a721d28c9",
+      "name": "Respond 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        880,
+        120
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"error\":\"signature does not match body\"}",
+        "options": {
+          "responseCode": 401
+        }
+      }
+    },
+    {
+      "id": "d1a49a2f-95fc-4f90-a9eb-bb2fc27bafe5",
+      "name": "Sticky Note a8a87973",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ],
+      "parameters": {
+        "content": "## Request notification\nConvex calls this when a borrow request is created or changes status. The webhook rejects tokens not signed with the Convex→n8n key; we then check the signed body hash, issuer, audience and that jti = eventId. The message uses only first name + initial, tool name and dates. Delivery is mocked as an upsert into lendloop_outbox (keyed by eventId, so retries never duplicate), then confirmed to Convex, which puts it in the recipient's in-app inbox.",
+        "color": 5
+      }
+    }
+  ],
+  "connections": {
+    "Loan event from Convex": {
+      "main": [
+        [
+          {
+            "node": "Read signed claims",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read signed claims": {
+      "main": [
+        [
+          {
+            "node": "Hash received body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hash received body": {
+      "main": [
+        [
+          {
+            "node": "Body matches signature?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Body matches signature?": {
+      "main": [
+        [
+          {
+            "node": "Compose message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose message": {
+      "main": [
+        [
+          {
+            "node": "Deliver (mock: log to outbox)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deliver (mock: log to outbox)": {
+      "main": [
+        [
+          {
+            "node": "Write delivery back to Convex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write delivery back to Convex": {
+      "main": [
+        [
+          {
+            "node": "Respond 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "errorWorkflow": "YOuTrCrq898oT89r",
+    "saveDataErrorExecution": "all"
+  },
+  "nodeGroups": [],
+  "sourceWorkflowId": null,
+  "tags": [
+    {
+      "updatedAt": "2026-10-31T05:32:41.140Z",
+      "createdAt": "2026-10-31T05:32:41.140Z",
+      "id": "P58khy5tYZPcxw7d",
+      "name": "lendloop"
+    }
+  ],
+  "versionMetadata": {
+    "name": "Read JWT claims from payload field",
+    "description": "Updated nodes: Body matches signature?"
+  }
+}

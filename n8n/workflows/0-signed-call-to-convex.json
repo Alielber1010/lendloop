@@ -1,0 +1,228 @@
+{
+  "updatedAt": "2026-10-31T05:32:41.161Z",
+  "createdAt": "2026-10-31T05:30:12.005Z",
+  "id": "QgumfE6iUqKqq1mD",
+  "name": "LendLoop – Signed call to Convex",
+  "description": "Shared sub-workflow: signs a payload with an HS256 JWT bound to the body hash and POSTs it to a LendLoop Convex HTTP endpoint, with retries.",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "4abd16d8-9489-4145-a959-d403f6d81359",
+      "name": "Called by LendLoop workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "path",
+              "type": "string"
+            },
+            {
+              "name": "payload",
+              "type": "object"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ea4b4144-d8ec-4c80-b63a-e2601b3d871d",
+      "name": "Serialize body",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "convex-site",
+              "name": "convexSiteUrl",
+              "value": "https://ceaseless-viper-431.convex.site",
+              "type": "string"
+            },
+            {
+              "id": "path",
+              "name": "path",
+              "value": "={{ $json.path }}",
+              "type": "string"
+            },
+            {
+              "id": "body-text",
+              "name": "bodyText",
+              "value": "={{ JSON.stringify($json.payload ?? {}) }}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "6072c845-b557-468b-ad29-a4d8b0431896",
+      "name": "Hash body",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "action": "hash",
+        "type": "SHA256",
+        "value": "={{ $json.bodyText }}",
+        "dataPropertyName": "bodySha256",
+        "encoding": "hex"
+      }
+    },
+    {
+      "id": "f48da0ad-b897-4bdb-a750-fa478a36780a",
+      "name": "Sign request (HS256)",
+      "type": "n8n-nodes-base.jwt",
+      "typeVersion": 1,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "operation": "sign",
+        "useJson": true,
+        "claimsJson": "={{ JSON.stringify({ iss: \"lendloop-n8n\", aud: \"lendloop-convex\", jti: $execution.id + \"-\" + $itemIndex, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 300, bodySha256: $json.bodySha256 }) }}",
+        "options": {
+          "algorithm": "HS256"
+        }
+      },
+      "credentials": {
+        "jwtAuth": {
+          "id": "LendLoopSignOut01",
+          "name": "LendLoop – sign n8n → Convex"
+        }
+      }
+    },
+    {
+      "id": "54b9e5cd-f9ee-47c3-89f7-811e15966a86",
+      "name": "POST to Convex",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Serialize body').item.json.convexSiteUrl }}/automation/{{ $('Serialize body').item.json.path }}",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $('Serialize body').item.json.bodyText }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "77f43e7d-dd0f-47c4-8c0a-f6ca7fee2c3c",
+      "name": "Sticky Note 4070ac05",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ],
+      "parameters": {
+        "content": "## Signed call to Convex\nShared by every LendLoop workflow. Serializes the payload once, hashes it, signs a 5-minute HS256 JWT that binds the body hash (secret lives in the n8n credential, not here), then POSTs the exact same bytes. Retries 4x, 5s apart; a final failure fails the caller, which triggers the LendLoop error workflow.",
+        "color": 4
+      }
+    }
+  ],
+  "connections": {
+    "Called by LendLoop workflow": {
+      "main": [
+        [
+          {
+            "node": "Serialize body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Serialize body": {
+      "main": [
+        [
+          {
+            "node": "Hash body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hash body": {
+      "main": [
+        [
+          {
+            "node": "Sign request (HS256)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign request (HS256)": {
+      "main": [
+        [
+          {
+            "node": "POST to Convex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "saveDataErrorExecution": "all",
+    "callerPolicy": "workflowsFromAList",
+    "callerIds": "IFGxLlFJhyr46c2u,dCHfyyMZCYKpwZ7F,YOuTrCrq898oT89r"
+  },
+  "nodeGroups": [],
+  "sourceWorkflowId": null,
+  "tags": [
+    {
+      "updatedAt": "2026-10-31T05:32:41.140Z",
+      "createdAt": "2026-10-31T05:32:41.140Z",
+      "id": "P58khy5tYZPcxw7d",
+      "name": "lendloop"
+    }
+  ],
+  "versionMetadata": {
+    "name": "Initial signed Convex call",
+    "description": "Created with 6 nodes: Called by LendLoop workflow, Serialize body, Hash body, Sign request (HS256), POST to Convex and 1 more"
+  }
+}

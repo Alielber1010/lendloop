@@ -1,0 +1,263 @@
+{
+  "updatedAt": "2026-10-31T05:32:45.167Z",
+  "createdAt": "2026-10-31T05:30:47.721Z",
+  "id": "YOuTrCrq898oT89r",
+  "name": "LendLoop – Error handler",
+  "description": "Error workflow for all LendLoop workflows: logs failed runs to the lendloop_errors data table and reports them (signed) to Convex for the admin page.",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "9f7ac13e-8767-4ad5-a54c-4c664e489093",
+      "name": "When a LendLoop workflow fails",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "ce490cf4-ac6b-4f21-86ce-a11485ef123a",
+      "name": "Summarize failure",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "exec",
+              "name": "executionId",
+              "value": "={{ String($json.execution?.id ?? $json.trigger?.error?.timestamp ?? $now.toMillis()) }}",
+              "type": "string"
+            },
+            {
+              "id": "wf",
+              "name": "workflow",
+              "value": "={{ $json.workflow?.name ?? \"unknown workflow\" }}",
+              "type": "string"
+            },
+            {
+              "id": "node",
+              "name": "node",
+              "value": "={{ $json.execution?.lastNodeExecuted ?? $json.trigger?.error?.node?.name ?? \"trigger\" }}",
+              "type": "string"
+            },
+            {
+              "id": "msg",
+              "name": "message",
+              "value": "={{ ($json.execution?.error?.message ?? $json.trigger?.error?.message ?? \"Unknown error\").slice(0, 500) }}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ba5b47ef-94f5-40f4-94da-20cca64f64d7",
+      "name": "Log to lendloop_errors",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "jJ51D859dePvpOwI",
+          "cachedResultName": "lendloop_errors"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "executionId",
+              "condition": "eq",
+              "keyValue": "={{ $json.executionId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "executionId": "={{ $json.executionId }}",
+            "workflow": "={{ $json.workflow }}",
+            "node": "={{ $json.node }}",
+            "message": "={{ $json.message }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "workflow",
+              "displayName": "workflow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "node",
+              "displayName": "node",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "93b2847a-f307-4950-bf9d-e0a58c183fa8",
+      "name": "Report to LendLoop admin",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "mode": "each",
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "QgumfE6iUqKqq1mD",
+          "cachedResultName": "LendLoop – Signed call to Convex"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "path": "error",
+            "payload": "={{ { executionId: $('Summarize failure').item.json.executionId, workflow: $('Summarize failure').item.json.workflow, node: $('Summarize failure').item.json.node, message: $('Summarize failure').item.json.message } }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "path",
+              "displayName": "path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "payload",
+              "displayName": "payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "89c2eee3-3632-4738-b093-7c9a5c2dc5a3",
+      "name": "Sticky Note 3adfa93f",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ],
+      "parameters": {
+        "content": "## LendLoop error handler\nSet as the error workflow of every LendLoop workflow. Each failed production run is logged in the n8n data table lendloop_errors and reported (signed) to Convex, where it shows on the LendLoop Admin page. Nothing fails silently.",
+        "color": 3
+      }
+    }
+  ],
+  "connections": {
+    "When a LendLoop workflow fails": {
+      "main": [
+        [
+          {
+            "node": "Summarize failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize failure": {
+      "main": [
+        [
+          {
+            "node": "Log to lendloop_errors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to lendloop_errors": {
+      "main": [
+        [
+          {
+            "node": "Report to LendLoop admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "nodeGroups": [],
+  "sourceWorkflowId": null,
+  "tags": [
+    {
+      "updatedAt": "2026-10-31T05:32:41.140Z",
+      "createdAt": "2026-10-31T05:32:41.140Z",
+      "id": "P58khy5tYZPcxw7d",
+      "name": "lendloop"
+    }
+  ],
+  "versionMetadata": {
+    "name": "Initial error handler",
+    "description": "Created with 5 nodes: When a LendLoop workflow fails, Summarize failure, Log to lendloop_errors, Report to LendLoop admin, Sticky Note 3adfa93f"
+  }
+}

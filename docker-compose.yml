@@ -1,0 +1,35 @@
+# Local n8n for LendLoop.
+#   docker compose up -d                    -> n8n at http://localhost:5678
+#   docker compose --profile tunnel up -d   -> also a public https URL (Cloudflare quick tunnel)
+#                                              so your Convex cloud deployment can reach the webhook.
+#                                              Find it with: docker compose logs tunnel | grep trycloudflare
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.36.7
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678"
+    environment:
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in .env.n8n}
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-UTC}
+      - WEBHOOK_URL=${N8N_PUBLIC_URL:-http://localhost:5678/}
+      - N8N_SECURE_COOKIE=false
+      # Workflows must not read process env: secrets live in encrypted credentials.
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=true
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=336
+    env_file:
+      - path: .env.n8n
+        required: false
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n:/lendloop:ro
+
+  tunnel:
+    image: cloudflare/cloudflared:2025.10.0
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate --url http://n8n:5678
+    depends_on: [n8n]
+
+volumes:
+  n8n_data:
