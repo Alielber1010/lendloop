@@ -4,7 +4,7 @@
 
 LendLoop is a neighbourhood tool-lending board. Neighbours list tools they're happy to lend, request to borrow each other's tools for a date range, and get notifications and overdue reminders that run through n8n.
 
-- **Live demo:** _see the submission email_ (Clerk development instance, so sign-up works with any email)
+- **Live demo:** https://lendloop-henna.vercel.app (Clerk development instance: sign up with any email)
 - **Stack:** Next.js 16 (App Router), Clerk, Convex, n8n (self-hosted), TypeScript
 - **Look and feel:** the *Virtual Cafe* design system (Woodhouse theme): its colour tokens, Pixelify Sans, Silkscreen and Work Sans type, and its Avatar Engine, which gives every neighbour a stable pixel avatar seeded from an opaque id
 
