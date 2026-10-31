@@ -19,13 +19,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <ClerkProvider
           appearance={{
             variables: {
-              colorPrimary: "#e9a24a",
-              colorBackground: "#1e1714",
-              colorForeground: "#f4eadc",
-              colorInput: "#120e0c",
-              colorInputForeground: "#f4eadc",
-              colorMutedForeground: "#b9a794",
-              colorNeutral: "#f4eadc",
+              colorPrimary: "#f0a54a",
+              colorPrimaryForeground: "#2a1806",
+              colorBackground: "#ffffff",
+              colorForeground: "#2a1806",
+              colorInput: "#ffffff",
+              colorInputForeground: "#2a1806",
+              colorMutedForeground: "#6e5843",
+              colorNeutral: "#2a1806",
               borderRadius: "12px",
             },
           }}
